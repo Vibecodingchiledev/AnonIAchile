@@ -5,3 +5,4 @@ python-multipart>=0.0.9
 faker>=24.0.0
 Babel>=2.14.0
 pandas>=2.0.0
+slowapi>=0.1.9
