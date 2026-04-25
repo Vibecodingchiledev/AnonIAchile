@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Gateway CL</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Privacy Gateway CL</h1>
+      <p>MVP comercial: anonimización, trazabilidad y control por roles.</p>
+    </div>
+    <div class="badge">Chile-first</div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>Login demo</h2>
+      <form id="loginForm" class="stack">
+        <label>Email
+          <input name="email" type="email" value="admin@demo.cl" required />
+        </label>
+        <label>Clave
+          <input name="password" type="password" value="demo123" required />
+        </label>
+        <button type="submit">Entrar</button>
+      </form>
+      <pre id="loginResult" class="result small"></pre>
+    </section>
+
+    <section class="card wide">
+      <h2>Anonimización de texto</h2>
+      <form id="anonymizeForm" class="stack">
+        <div class="row">
+          <label>Método
+            <select name="method">
+              <option value="intelligent">intelligent</option>
+              <option value="label">label</option>
+              <option value="random">random</option>
+            </select>
+          </label>
+          <label>Rol
+            <select name="role">
+              <option value="researcher">researcher</option>
+              <option value="operator">operator</option>
+              <option value="auditor">auditor</option>
+              <option value="admin">admin</option>
+              <option value="api_client">api_client</option>
+            </select>
+          </label>
+          <label>Responsable
+            <input name="responsible_user" value="matias.rojas" />
+          </label>
+        </div>
+        <label>Texto
+          <textarea name="text" rows="9">Mi nombre es Matías Rojas. Mi RUT es 12.345.678-5, vivo en Calle Los Olivos 123, Santiago y mi teléfono es +56 9 8765 4321.</textarea>
+        </label>
+        <button type="submit">Procesar</button>
+      </form>
+      <div class="results-grid">
+        <div>
+          <h3>Texto anonimizado</h3>
+          <pre id="anonText" class="result"></pre>
+        </div>
+        <div>
+          <h3>Reporte JSON</h3>
+          <pre id="anonReport" class="result"></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Subir archivo UTF-8</h2>
+      <form id="fileForm" class="stack" enctype="multipart/form-data">
+        <input type="file" name="file" required />
+        <input type="hidden" name="method" value="intelligent" />
+        <input type="hidden" name="role" value="operator" />
+        <input type="hidden" name="responsible_user" value="dashboard.upload" />
+        <button type="submit">Anonimizar archivo</button>
+      </form>
+      <pre id="fileResult" class="result small"></pre>
+    </section>
+
+    <section class="card wide">
+      <h2>Últimos jobs</h2>
+      <button id="refreshJobs">Actualizar</button>
+      <div id="jobsTableWrap">
+        <table id="jobsTable">
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>Método</th>
+              <th>Rol</th>
+              <th>Responsable</th>
+              <th>Estado</th>
+              <th>Cobertura</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+            <tr>
+              <td>{{ job.job_id }}</td>
+              <td>{{ job.method }}</td>
+              <td>{{ job.role }}</td>
+              <td>{{ job.responsible_user }}</td>
+              <td>{{ job.status }}</td>
+              <td>{{ job.risk_summary.coverage_ratio }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    async function postForm(url, formData) {
+      const response = await fetch(url, { method: 'POST', body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || 'Error');
+      return data;
+    }
+
+    async function postJson(url, body) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || 'Error');
+      return data;
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      try {
+        const data = await postForm('/api/login', formData);
+        document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('loginResult').textContent = err.message;
+      }
+    });
+
+    document.getElementById('anonymizeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const payload = Object.fromEntries(fd.entries());
+      try {
+        const data = await postJson('/api/anonymize', payload);
+        document.getElementById('anonText').textContent = data.anonymized_text;
+        document.getElementById('anonReport').textContent = JSON.stringify(data, null, 2);
+        loadJobs();
+      } catch (err) {
+        document.getElementById('anonReport').textContent = err.message;
+      }
+    });
+
+    document.getElementById('fileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      try {
+        const data = await postForm('/api/anonymize-file', formData);
+        document.getElementById('fileResult').textContent = JSON.stringify({
+          job_id: data.job_id,
+          anonymized_hash: data.anonymized_hash,
+          coverage_ratio: data.risk_summary.coverage_ratio
+        }, null, 2);
+        loadJobs();
+      } catch (err) {
+        document.getElementById('fileResult').textContent = err.message;
+      }
+    });
+
+    async function loadJobs() {
+      const response = await fetch('/api/jobs');
+      const jobs = await response.json();
+      const tbody = document.querySelector('#jobsTable tbody');
+      tbody.innerHTML = jobs.map(job => `
+        <tr>
+          <td>${job.job_id}</td>
+          <td>${job.method}</td>
+          <td>${job.role}</td>
+          <td>${job.responsible_user}</td>
+          <td>${job.status}</td>
+          <td>${job.risk_summary.coverage_ratio}</td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('refreshJobs').addEventListener('click', loadJobs);
+  </script>
+</body>
+</html>

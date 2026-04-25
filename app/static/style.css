@@ -1,0 +1,102 @@
+:root {
+  --bg: #0b1220;
+  --panel: #111a2b;
+  --panel-2: #17243c;
+  --text: #e8eefb;
+  --muted: #9ab0d3;
+  --accent: #2dd4bf;
+  --border: #28405f;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, Arial, sans-serif;
+  background: linear-gradient(180deg, #0b1220, #0f172a);
+  color: var(--text);
+}
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(17, 26, 43, 0.9);
+  position: sticky;
+  top: 0;
+}
+.topbar h1 { margin: 0 0 4px; }
+.topbar p { margin: 0; color: var(--muted); }
+.badge {
+  background: rgba(45, 212, 191, 0.12);
+  border: 1px solid rgba(45, 212, 191, 0.5);
+  color: var(--accent);
+  padding: 10px 14px;
+  border-radius: 999px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+  padding: 24px 32px 40px;
+}
+.card {
+  grid-column: span 4;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.card.wide { grid-column: span 8; }
+.stack { display: grid; gap: 14px; }
+.row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+}
+label { display: grid; gap: 8px; color: var(--muted); font-size: 14px; }
+input, select, textarea, button {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 12px;
+  font: inherit;
+}
+button {
+  background: linear-gradient(90deg, #14b8a6, #0ea5e9);
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.result {
+  min-height: 240px;
+  white-space: pre-wrap;
+  overflow: auto;
+  background: #0a1120;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+.result.small { min-height: 120px; }
+#jobsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+#jobsTable th, #jobsTable td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+#jobsTable th { color: var(--muted); }
+@media (max-width: 1100px) {
+  .card, .card.wide { grid-column: span 12; }
+  .row, .results-grid { grid-template-columns: 1fr; }
+}
